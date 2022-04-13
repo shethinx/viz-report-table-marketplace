@@ -86,6 +86,14 @@ const tableModelCoreOptions = {
     default: true,
     order: 7
   },
+  varianceRange: {
+    section: 'Theme',
+    type: 'number',
+    display_size: 'normal',
+    label: "Color Variance % Range",
+    default: 5,
+    order: 8
+  },
 
   columnOrder: {},
   
@@ -250,6 +258,7 @@ class VisPluginTableModel {
     this.minWidthForIndexColumns = config.minWidthForIndexColumns || false
     this.showTooltip = config.showTooltip || false
     this.showHighlight = config.showHighlight || false
+    this.varianceRange = config.varianceRange || 5 
     this.genericLabelForSubtotals = config.genericLabelForSubtotals || false
 
     this.sorts = queryResponse.sorts
@@ -1529,10 +1538,12 @@ class VisPluginTableModel {
    * @param {*} baseline 
    * @param {*} comparison 
    */
-  calculateVariance (value_format, id, calc, baseline, comparison, is_neg_bad) {
+  calculateVariance (value_format, id, calc, baseline, comparison, is_neg_bad, variance_color) {
     this.data.forEach(row => {
       var baseline_value = row.data[baseline.id].value
       var comparison_value = row.data[comparison.id].value
+      var variance = Math.abs((baseline_value - comparison_value) / Math.abs(comparison_value))
+      var color = (variance >= variance_color/100) ? true : false
       if (calc === 'absolute') {
         var cell = new DataCell({
           value: baseline_value - comparison_value,
@@ -1567,19 +1578,21 @@ class VisPluginTableModel {
       if (row.type === 'subtotal') {
         cell.cell_style.push('subtotal')
       }
-      if (is_neg_bad) {
-        if (cell.value < 0) {
-          cell.cell_style.push('negative')
-        }
-        if (cell.value > 0) {
-          cell.cell_style.push('positive')
-        }
-      } else {
-        if (cell.value > 0) {
-          cell.cell_style.push('negative')
-        }
-        if (cell.value < 0) {
-          cell.cell_style.push('positive')
+      if (color) {
+        if (is_neg_bad) {
+          if (cell.value < 0) {
+            cell.cell_style.push('negative')
+          }
+          if (cell.value > 0) {
+            cell.cell_style.push('positive')
+          }
+        } else {
+          if (cell.value > 0) {
+            cell.cell_style.push('negative')
+          }
+          if (cell.value < 0) {
+            cell.cell_style.push('positive')
+          }
         }
       }
       
@@ -1651,9 +1664,9 @@ class VisPluginTableModel {
 
     this.columns.push(column)
     if (colpair.variance.reverse) {
-      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, comparison, baseline, this.config['is_neg_bad|' + baseline.modelField.name])
+      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, comparison, baseline, this.config['is_neg_bad|' + baseline.modelField.name], this.config['varianceRange'])
     } else {
-      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, baseline, comparison, this.config['is_neg_bad|' + baseline.modelField.name])
+      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, baseline, comparison, this.config['is_neg_bad|' + baseline.modelField.name], this.config['varianceRange'])
     }
   }
 
