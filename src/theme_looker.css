@@ -160,6 +160,10 @@ th.headerCell {
   color: red;
 }
 
+.positive {
+  color: green;
+}
+
 .estimate {
   color: darkgray !important;
 }
