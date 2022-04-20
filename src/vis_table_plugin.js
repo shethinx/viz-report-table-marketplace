@@ -477,6 +477,25 @@ class VisPluginTableModel {
         default: false,
         order: 100 + i * 10 + 8,
       }
+
+      newOptions["is_neg_bad|" + measure.name] = {
+        section: "Measures",
+        type: "boolean",
+        label: "Is Neg Bad",
+        display_size: "normal",
+        default: true,
+        order: 100 + i * 10 + 9,
+      }
+
+      newOptions["variance_range|" + measure.name] = {
+        section: 'Measures',
+        type: 'number',
+        display_size: 'normal',
+        label: "Color Var % Range",
+        default: 5,
+        order: 100 + i * 10 + 10,
+      };
+
     })
     return newOptions
   }
@@ -1519,10 +1538,12 @@ class VisPluginTableModel {
    * @param {*} baseline 
    * @param {*} comparison 
    */
-  calculateVariance (value_format, id, calc, baseline, comparison) {
+  calculateVariance (value_format, id, calc, baseline, comparison, is_neg_bad, variance_color) {
     this.data.forEach(row => {
       var baseline_value = row.data[baseline.id].value
       var comparison_value = row.data[comparison.id].value
+      var variance = Math.abs((baseline_value - comparison_value) / Math.abs(comparison_value))
+      var color = (variance >= variance_color/100) ? true : false
       if (calc === 'absolute') {
         var cell = new DataCell({
           value: baseline_value - comparison_value,
@@ -1557,9 +1578,24 @@ class VisPluginTableModel {
       if (row.type === 'subtotal') {
         cell.cell_style.push('subtotal')
       }
-      if (cell.value < 0) {
-        cell.cell_style.push('negative')
+      if (color) {
+        if (is_neg_bad) {
+          if (cell.value < 0) {
+            cell.cell_style.push('negative')
+          }
+          if (cell.value > 0) {
+            cell.cell_style.push('positive')
+          }
+        } else {
+          if (cell.value > 0) {
+            cell.cell_style.push('negative')
+          }
+          if (cell.value < 0) {
+            cell.cell_style.push('positive')
+          }
+        }
       }
+      
       row.data[id] = cell
     })
   }
@@ -1628,9 +1664,9 @@ class VisPluginTableModel {
 
     this.columns.push(column)
     if (colpair.variance.reverse) {
-      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, comparison, baseline)
+      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, comparison, baseline, this.config['is_neg_bad|' + baseline.modelField.name], this.config['variance_range|' + baseline.modelField.name])
     } else {
-      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, baseline, comparison)
+      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, baseline, comparison, this.config['is_neg_bad|' + baseline.modelField.name], this.config['variance_range|' + baseline.modelField.name])
     }
   }
 
@@ -2026,7 +2062,7 @@ class VisPluginTableModel {
 
       if (option[0].split('|').length === 2) {
         var [field_option, field_name] = option[0].split('|')
-        if (['label', 'heading', 'hide', 'style', 'switch', 'var_num', 'var_pct', 'comparison'].includes(field_option)) {
+        if (['label', 'heading', 'hide', 'style', 'switch', 'var_num', 'var_pct', 'comparison', 'is_neg_bad'].includes(field_option)) {
           var keep_option = false
           this.dimensions.forEach(dimension => {
             if (dimension.name === field_name) { keep_option = true }
