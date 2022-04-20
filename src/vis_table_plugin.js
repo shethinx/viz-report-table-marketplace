@@ -490,10 +490,19 @@ class VisPluginTableModel {
       newOptions["variance_range|" + measure.name] = {
         section: 'Measures',
         type: 'number',
-        display_size: 'normal',
+        display_size: 'half',
         label: "Color Var % Range",
         default: 5,
-        order: 100 + i * 10 + 10,
+        order: 100 + i * 10 + 9.1,
+      }
+      
+      newOptions["variance_format|" + measure.name] = {
+        section: 'Measures',
+        type: 'string',
+        display_size: 'half',
+        label: "Variance Format",
+        default: '0.00%',
+        order: 100 + i * 10 + 9.2,
       };
 
     })
@@ -1538,7 +1547,7 @@ class VisPluginTableModel {
    * @param {*} baseline 
    * @param {*} comparison 
    */
-  calculateVariance (value_format, id, calc, baseline, comparison, is_neg_bad, variance_color) {
+  calculateVariance (value_format, id, calc, baseline, comparison, is_neg_bad, variance_color, variance_range) {
     this.data.forEach(row => {
       var baseline_value = row.data[baseline.id].value
       var comparison_value = row.data[comparison.id].value
@@ -1565,7 +1574,7 @@ class VisPluginTableModel {
         } else {
           var cell = new DataCell({
             value: value,
-            rendered: SSF.format('#0.00%', value),
+            rendered: SSF.format(variance_range, value),
             cell_style: ['numeric', 'measure', 'variance', 'variancePercent'],
             colid: id,
             rowid: row.id
@@ -1664,9 +1673,9 @@ class VisPluginTableModel {
 
     this.columns.push(column)
     if (colpair.variance.reverse) {
-      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, comparison, baseline, this.config['is_neg_bad|' + baseline.modelField.name], this.config['variance_range|' + baseline.modelField.name])
+      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, comparison, baseline, this.config['is_neg_bad|' + baseline.modelField.name], this.config['variance_range|' + baseline.modelField.name], this.config['variance_format|' + baseline.modelField.name])
     } else {
-      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, baseline, comparison, this.config['is_neg_bad|' + baseline.modelField.name], this.config['variance_range|' + baseline.modelField.name])
+      this.calculateVariance(baseline.modelField.value_format, id, colpair.calc, baseline, comparison, this.config['is_neg_bad|' + baseline.modelField.name], this.config['variance_range|' + baseline.modelField.name], this.config['variance_format|' + baseline.modelField.name])
     }
   }
 
